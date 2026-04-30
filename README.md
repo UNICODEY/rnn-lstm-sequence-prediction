@@ -38,7 +38,7 @@ and run all cells. No local installation needed.
 
 ![comparison](comparison.png)
 
-## Extended: Training Strategies & Latent Space (Method 2)
+## Method 2: Training Strategies & Latent Space
 
 Building on the compounding error finding, this project was extended to explore
 two directions:
@@ -57,6 +57,7 @@ mean (a common failure mode in encoder-decoder architectures).
 Result: latent predictor tracks the noisy signal more accurately than raw-space
 rollout, demonstrating the core advantage of structured latent representations
 used in RSSM/Dreamer.
+![latent vs raw](latent_vs_raw.png)
 
 **Method 3 (coming soon):** stochastic latent space — encoder outputs (mu, sigma)
 instead of a fixed vector, completing the VAE-style design central to RSSM.
