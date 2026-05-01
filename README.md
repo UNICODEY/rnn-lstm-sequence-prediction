@@ -62,11 +62,11 @@ KL divergence, completing the VAE-style design central to RSSM.
 | Latent predictor | high | yes | no |
 | Stochastic latent | high | yes | yes |
 
-![error vs horizon](error_vs_horizon.png)
-
 Teacher forcing shows the highest long-horizon error despite low training loss,
 confirming train-test mismatch. Latent space methods maintain the lowest error
 across all horizons.
+
+![error vs horizon](error_vs_horizon.png)
 
 | Method | Mean MSE (all) | Mean MSE (last 50) |
 |--------|---------------|--------------------|
