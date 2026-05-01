@@ -68,6 +68,14 @@ across all horizons.
 
 ![error vs horizon](error_vs_horizon.png)
 
+Method                    Mean MSE (all)       Mean MSE (last 50)
+-----------------------------------------------------------------
+Free rollout              0.01676              0.02204
+Teacher forcing           0.02147              0.03815
+Scheduled sampling        0.00953              0.00938
+Latent space              0.00978              0.01095
+Stochastic latent         0.01151              0.01720
+
 ## How to run
 
 ```
