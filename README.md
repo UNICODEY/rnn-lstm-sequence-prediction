@@ -31,6 +31,8 @@ Three strategies compared on the harder noisy signal:
 Key finding: on a capable model (LSTM), all three strategies converge on this
 signal. Differences emerge under longer horizons and higher noise.
 
+![methods](three_methods_comparison.png)
+
 **Part 3: Latent space predictor (RSSM-inspired)**
 Instead of predicting in raw value space, an encoder compresses each timestep
 into a 16-dim latent vector. The LSTM predicts the next latent state, and a
@@ -39,6 +41,8 @@ decoder reconstructs the output.
 Gradient clipping was essential to stabilise training. Without it, the model
 collapsed to predicting the mean — a common failure mode in encoder-decoder
 architectures.
+
+![latent](latent_vs_raw.png)
 
 **Part 4: Stochastic latent space (VAE-style)**
 The encoder now outputs a distribution (mu, sigma) rather than a fixed vector.
