@@ -178,6 +178,14 @@ def rollout_stochastic(model, steps=200, deterministic=True):
             current = torch.cat([current[:, 1:, :], torch.tensor([[[val.item()]]])], dim=1)
     return preds
 
+def compute_horizon_error(preds, ground_truth):
+    preds = np.array(preds)
+    truth = np.array(ground_truth[:len(preds)])
+    return [(preds[i] - truth[i])**2 for i in range(len(preds))]
+
+def smooth(errors, window=10):
+    return np.convolve(errors, np.ones(window)/window, mode='valid')
+
 # ── Train ─────────────────────────────────────────
 print("Training free rollout...")
 model_free = SeqPredictor(); train_free(model_free)
@@ -202,6 +210,12 @@ preds_teacher    = rollout(model_teacher)
 preds_scheduled  = rollout(model_scheduled)
 preds_latent     = rollout_latent(model_latent)
 preds_stochastic = rollout_stochastic(model_stochastic)
+
+errors_free       = compute_horizon_error(preds_free, ground_truth)
+errors_teacher    = compute_horizon_error(preds_teacher, ground_truth)
+errors_scheduled  = compute_horizon_error(preds_scheduled, ground_truth)
+errors_latent     = compute_horizon_error(preds_latent, ground_truth)
+errors_stochastic = compute_horizon_error(preds_stochastic, ground_truth)
 
 # ── Plot ──────────────────────────────────────────
 fig, axes = plt.subplots(6, 1, figsize=(12, 22))
@@ -236,4 +250,18 @@ axes[5].legend()
 
 plt.tight_layout()
 plt.savefig('full_comparison.png', dpi=150)
+plt.show()
+
+fig2, ax = plt.subplots(figsize=(12, 4))
+ax.plot(smooth(errors_free),       color='coral',  label='Free rollout')
+ax.plot(smooth(errors_teacher),    color='green',  label='Teacher forcing')
+ax.plot(smooth(errors_scheduled),  color='purple', label='Scheduled sampling')
+ax.plot(smooth(errors_latent),     color='red',    label='Latent space')
+ax.plot(smooth(errors_stochastic), color='orange', label='Stochastic latent')
+ax.set_xlabel('Prediction horizon (steps)')
+ax.set_ylabel('MSE (smoothed)')
+ax.set_title('Prediction Error vs Horizon (10-step moving average)')
+ax.legend()
+plt.tight_layout()
+plt.savefig('error_vs_horizon.png', dpi=150)
 plt.show()
