@@ -1,74 +1,74 @@
-# Sequence Prediction: RNN vs LSTM
+# Sequence Prediction: From LSTM to RSSM
 
-Exploring how recurrent neural networks learn to predict time series,
-and how architecture choice affects long-horizon rollout stability.
+A progressive exploration of long-horizon sequence prediction,
+starting from a vanilla LSTM and building toward the core architecture
+of world models (RSSM / Dreamer).
 
 ## What this project does
 
-Trains three models to predict a composite sine wave (`sin(t) + 0.5·sin(3t)`)
-and evaluates how well each can **autoregressively roll out 100 steps**
-feeding its own predictions back as input. This is the same core idea behind
-world models like Dreamer, just with a much simpler signal.
+Predicts a noisy composite signal (`sin(t) + 0.5·sin(3t) + 0.3·sin(7t) + noise`)
+using autoregressive rollout — feeding each prediction back as the next input.
+Each method addresses a limitation of the previous one, tracing the design
+decisions that motivate RSSM.
 
-## Models compared
+## Methods
 
-| Model    | Hidden size | Params |
-|----------|-------------|--------|
-| RNN-32   | 32          | ~1K    |
-| RNN-128  | 128         | ~17K   |
-| LSTM-32  | 32          | ~4K    |
+**Part 1: Architecture comparison**
+Trained RNN-32, RNN-128, and LSTM-32 on a clean dual-frequency signal.
+More parameters (RNN-128) did not help. LSTM-32 consistently outperformed
+despite having fewer parameters than RNN-128, demonstrating that architecture
+design matters more than capacity.
 
-## Key finding
+![architecture comparison](comparison.png)
 
-More parameters (RNN-128) did not help. The larger model was harder to
-train and showed worse rollout stability. LSTM's gating mechanism didn't
-consistently outperform vanilla RNN on this task either. The main takeaway:
-**architecture choice matters less than training stability on simple signals;
-compounding error in autoregressive rollout is the real challenge.**
+**Part 2: Training strategies**
+Three strategies compared on the harder noisy signal:
 
-This connects directly to why world models (RSSM, Dreamer) invest heavily
-in structured latent spaces rather than simply scaling up hidden size.
+- Free rollout: standard training, model never sees its own predictions
+- Teacher forcing: ground truth fed at every step during training
+- Scheduled sampling: gradually transitions from teacher forcing to free rollout
 
-## How to run
+Key finding: on a capable model (LSTM), all three strategies converge on this
+signal. Differences emerge under longer horizons and higher noise.
 
-Open `architecture_comparison.py` in PyCharm or any Python environment.
-Requires: `torch`, `numpy`, `matplotlib`.
+**Part 3: Latent space predictor (RSSM-inspired)**
+Instead of predicting in raw value space, an encoder compresses each timestep
+into a 16-dim latent vector. The LSTM predicts the next latent state, and a
+decoder reconstructs the output.
 
-## Results
-
-![comparison](comparison.png)
-
-## Method 2: Training Strategies & Latent Space
-
-Building on the compounding error finding, this project was extended to explore
-two directions:
-
-**Training strategies** compare free rollout, teacher forcing, and scheduled
-sampling on a harder signal (`sin(t) + 0.5·sin(3t) + 0.3·sin(7t) + noise`).
-Key finding: on a capable model (LSTM), all three strategies converge. Differences
-emerge under noise and longer horizons.
-
-![methods](three_methods_comparison.png)
-
-**Latent space prediction (RSSM-inspired)** encodes each timestep into a 16-dim
-latent vector, predicts in that compressed space, and reconstructs the output via
-a decoder. Training required gradient clipping to stabilise. Without it, the model
-collapsed to predicting the mean, a common failure mode in encoder-decoder
+Gradient clipping was essential to stabilise training. Without it, the model
+collapsed to predicting the mean — a common failure mode in encoder-decoder
 architectures.
 
-Result: latent predictor tracks the noisy signal more accurately than raw-space
-rollout, demonstrating the core advantage of structured latent representations
-used in RSSM/Dreamer.
-
-![latent](latent_vs_raw.png)
-
-**Method 3 (coming soon):** stochastic latent space. The encoder will output
-(mu, sigma) instead of a fixed vector, completing the VAE-style design central
-to RSSM.
+**Part 4: Stochastic latent space (VAE-style)**
+The encoder now outputs a distribution (mu, sigma) rather than a fixed vector.
+Each prediction samples from this distribution via the reparameterization trick,
+allowing the model to express uncertainty. Trained with reconstruction loss and
+KL divergence, completing the VAE-style design central to RSSM.
 
 ![full comparison](full_comparison.png)
 
-## Background
+## Results summary
 
-Built as a first step toward understanding world models and recurrent
-state-space models (RSSM). Inspired by DreamerV3 (Hafner et al., 2023).
+| Method | Rollout stability | Captures noise | Uncertainty |
+|--------|------------------|----------------|-------------|
+| Free rollout | moderate | partial | no |
+| Teacher forcing | high | yes | no |
+| Scheduled sampling | high | yes | no |
+| Latent predictor | high | yes | no |
+| Stochastic latent | high | yes | yes |
+
+## How to run
+
+```
+pip install torch numpy matplotlib
+python training_strategies_and_latent.py
+```
+
+## Connection to world models
+
+This project implements a simplified version of the RSSM used in DreamerV3
+(Hafner et al., 2023). The full RSSM adds: action conditioning, multi-step
+imagination rollouts, and a separate actor-critic trained entirely in latent
+space. The stochastic latent predictor here is the direct predecessor to that
+architecture.
