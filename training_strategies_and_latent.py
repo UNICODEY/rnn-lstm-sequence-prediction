@@ -217,6 +217,16 @@ errors_scheduled  = compute_horizon_error(preds_scheduled, ground_truth)
 errors_latent     = compute_horizon_error(preds_latent, ground_truth)
 errors_stochastic = compute_horizon_error(preds_stochastic, ground_truth)
 
+methods = ['Free rollout', 'Teacher forcing', 'Scheduled sampling', 'Latent space', 'Stochastic latent']
+all_errors = [errors_free, errors_teacher, errors_scheduled, errors_latent, errors_stochastic]
+
+print(f"\n{'Method':<25} {'Mean MSE (all)':<20} {'Mean MSE (last 50)'}")
+print("-" * 65)
+for name, errors in zip(methods, all_errors):
+    mean_all  = np.mean(errors)
+    mean_last = np.mean(errors[-50:])
+    print(f"{name:<25} {mean_all:<20.5f} {mean_last:.5f}")
+
 # ── Plot ──────────────────────────────────────────
 fig, axes = plt.subplots(6, 1, figsize=(12, 22))
 
